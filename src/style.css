@@ -1,0 +1,26 @@
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  overflow: hidden;
+  background: #212425;
+  color: #d7e0e3;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+#app { position: fixed; inset: 0; }
+#app canvas { display: block; }
+
+.hud {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  padding: 8px 10px;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre;
+  pointer-events: none;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 6px;
+}
+
