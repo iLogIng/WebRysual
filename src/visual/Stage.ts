@@ -19,7 +19,7 @@ export class Stage{
         });
         container.appendChild(this.renderer.domElement)
         
-        this.scene.background = new THREE.Color(0x212425FF);
+        this.scene.background = new THREE.Color(0x212425);
         
         this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 100);
         this.camera.position.z = 10;

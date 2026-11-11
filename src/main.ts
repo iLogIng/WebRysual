@@ -10,7 +10,7 @@ if (!app || !hud)
 const stage = new Stage(app)
 
 const cube = new THREE.Mesh(
-  new THREE.BoxGeometry(1, 1, 1),
+  new THREE.BoxGeometry(2, 2, 2),
   new THREE.MeshBasicMaterial({color: 0x66ccff}),
 );
 stage.scene.add(cube);
