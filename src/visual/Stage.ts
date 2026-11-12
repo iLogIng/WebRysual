@@ -1,8 +1,9 @@
 import * as THREE from 'three';
 
+// 高度的固定比例份额
 const VIEW_H: number = 9;
 
-export class Stage{
+export class Stage {
     readonly scene = new THREE.Scene();
     readonly camera: THREE.OrthographicCamera;
     readonly renderer: THREE.WebGLRenderer;
@@ -14,7 +15,7 @@ export class Stage{
         this.container = container;
 
         this.renderer = new THREE.WebGLRenderer({
-            antialias: true, // 抗锯齿
+            antialias: true,    // 抗锯齿
             powerPreference: 'high-performance',
         });
         container.appendChild(this.renderer.domElement)

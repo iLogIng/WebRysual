@@ -9,12 +9,14 @@ if (!app || !hud)
 
 const stage = new Stage(app)
 
+// 立方体
 const cube = new THREE.Mesh(
   new THREE.BoxGeometry(2, 2, 2),
   new THREE.MeshBasicMaterial({color: 0x66ccff}),
 );
 stage.scene.add(cube);
 
+// 时钟
 const clock = { last: performance.now(), fps: 0 };
 
 function frame(now: number): void {
