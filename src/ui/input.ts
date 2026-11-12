@@ -1,8 +1,16 @@
 import type { AudioEngine } from "../audio/AudioEngine";
+import type { VisualMode } from "../visual/AudioVisualizer";
 
-export function bindKeyboard(engine: AudioEngine): () => void {
+export type KeyboardOptions = {
+  onMode?: (mode: VisualMode) => void;
+};
+
+export function bindKeyboard(
+  engine: AudioEngine,
+  options: KeyboardOptions = {},
+): () => void {
   const onKeyDown = (e: KeyboardEvent): void => {
-    if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
 
     const el = e.target as HTMLElement | null;
     if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) return;
@@ -27,6 +35,14 @@ export function bindKeyboard(engine: AudioEngine): () => void {
       case "Equal":
       case "NumpadAdd":
         engine.changeGain(0.05);
+        break;
+      case "Digit1":
+      case "Numpad1":
+        options.onMode?.("spectrum");
+        break;
+      case "Digit2":
+      case "Numpad2":
+        options.onMode?.("waveform");
         break;
       default:
         break;

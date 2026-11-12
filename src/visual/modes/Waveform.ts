@@ -59,6 +59,7 @@ export class Waveform {
   }
 
   update(samples: Float32Array, viewWidth: number): void {
+    // 采样数
     const n = samples.length;
     if (n === 0) return;
 
