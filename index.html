@@ -8,6 +8,19 @@
   <body>
     <div id="app"></div>
     <div id="hud" class="hud"></div>
+    <div id="controls" class="controls">
+      <button id="btn-load" type="button">选择文件</button>
+      <button id="btn-back" type="button" disabled>-5s</button>
+      <button id="btn-play" type="button" disabled>播放</button>
+      <button id="btn-fwd" type="button" disabled>+5s</button>
+      <button id="btn-vol-down" type="button">音量 -</button>
+      <button id="btn-vol-up" type="button">音量 +</button>
+
+      <span id="track" class="track">未加载</span>
+      <span id="time" class="time">00:00 / 00:00</span>
+
+      <input id="file" type="file" accept="audio/*" hidden />
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

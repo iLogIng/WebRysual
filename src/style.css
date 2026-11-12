@@ -1,4 +1,7 @@
-html, body { height: 100%; }
+html,
+body {
+  height: 100%;
+}
 
 body {
   margin: 0;
@@ -8,8 +11,13 @@ body {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
-#app { position: fixed; inset: 0; }
-#app canvas { display: block; }
+#app {
+  position: fixed;
+  inset: 0;
+}
+#app canvas {
+  display: block;
+}
 
 .hud {
   position: fixed;
@@ -20,7 +28,52 @@ body {
   line-height: 1.5;
   white-space: pre;
   pointer-events: none;
-  background: rgba(0, 0, 0, 0.35);
+  background: rgba(00, 0, 0, 0.35);
   border-radius: 6px;
 }
 
+.controls {
+  position: fixed;
+  left: 50%;
+  bottom: 20px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  font-size: 13px;
+  z-index: 10;
+}
+
+.controls {
+  font: inherit;
+  color: inherit;
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.controls button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.controls button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.track {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.time {
+  color: #9fb0b5;
+}

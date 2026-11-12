@@ -1,41 +1,47 @@
-import './style.css';
-import * as THREE from 'three';
-import { Stage } from './visual/Stage';
+import "./style.css";
+import { Stage } from "./visual/Stage";
+import { AudioEngine } from "./audio/AudioEngine";
+import { bindControls } from "./ui/controls";
+import { bindKeyboard } from "./ui/input";
+import { Waveform } from "./visual/modes/Waveform";
 
-const app = document.querySelector<HTMLDivElement>('#app');
-const hud = document.querySelector<HTMLDivElement>('#hud');
-if (!app || !hud)
-  throw new Error('missiog dom')
+const app = document.querySelector<HTMLDivElement>("#app");
+const hud = document.querySelector<HTMLDivElement>("#hud");
+if (!app || !hud) throw new Error("missing dom");
 
-const stage = new Stage(app)
+const stage = new Stage(app);
+const engine = new AudioEngine();
+const controls = bindControls(engine);
+const unbindKeys = bindKeyboard(engine);
 
-// 立方体
-const cube = new THREE.Mesh(
-  new THREE.BoxGeometry(2, 2, 2),
-  new THREE.MeshBasicMaterial({color: 0x66ccff}),
-);
-stage.scene.add(cube);
+const waveform = new Waveform();
+stage.scene.add(waveform.object);
 
-// 时钟
+// 预分配，每帧复用
+const timeBuf = new Float32Array(engine.analyser.fftSize);
+
 const clock = { last: performance.now(), fps: 0 };
 
 function frame(now: number): void {
   const dt = Math.min((now - clock.last) / 1000, 0.1);
   clock.last = now;
-  if (dt > 0)
-    clock.fps = clock.fps * 0.9 + (1 / dt) * 0.1;
-  
-  cube.rotation.x += dt * 0.6;
-  cube.rotation.y += dt * 0.9;
-  
-  stage.render();
+  if (dt > 0) clock.fps = clock.fps * 0.9 + (1 / dt) * 0.1;
 
-  if (hud == null)
-    throw new Error("hud cannot be null")
-  hud.textContent = `fps  ${clock.fps.toFixed(2)}\n` +
-                     `size ${stage.width}x${stage.height}\n` +
-                     `dpr  ${window.devicePixelRatio}`;
-  
+  engine.analyser.getFloatTimeDomainData(timeBuf);
+  waveform.update(timeBuf, stage.viewWidth);
+  waveform.setViewport(stage.width, stage.height);
+
+  const s = engine.snapshot();
+  if (hud == null) throw new Error("hud cannot be null");
+  hud.textContent =
+    `fps  ${clock.fps.toFixed(1)}\n` +
+    `ctx  ${s.ctxState}\n` +
+    `sr   ${engine.sampleRate}\n` +
+    `rms  ${waveform.rms.toFixed(4)}\n` +
+    `gain ${s.gain.toFixed(2)}`;
+
+  controls.render(s);
+  stage.render();
   requestAnimationFrame(frame);
 }
 
@@ -43,10 +49,10 @@ requestAnimationFrame(frame);
 
 if (import.meta.hot) {
   import.meta.hot.dispose(() => {
+    unbindKeys();
+    controls.dispose();
+    waveform.dispose();
+    engine.dispose();
     stage.dispose();
-    cube.geometry.dispose();
-    (cube.material as THREE.MeshBasicMaterial).dispose();
   });
 }
-
-
