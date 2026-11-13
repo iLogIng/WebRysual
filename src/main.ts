@@ -6,6 +6,7 @@ import { AudioVisualizer } from "./visual/AudioVisualizer";
 import { bindControls } from "./ui/controls";
 import { bindKeyboard } from "./ui/input";
 import { bindDropzone } from "./ui/dropzone";
+import { bindPlaylistPanel } from "./ui/PlaylistPanel";
 import { computeRms } from "./audio/dsp";
 
 function mustElement<T extends Element>(selector: string): T {
@@ -26,6 +27,7 @@ const visualizer = new AudioVisualizer({
 });
 stage.scene.add(visualizer.object);
 
+const panel = bindPlaylistPanel(player);
 const controls = bindControls(player);
 const unbindKeys = bindKeyboard(engine, {
   onMode: (mode) => {
@@ -36,6 +38,9 @@ const unbindKeys = bindKeyboard(engine, {
   },
   onPrev: () => {
     void player.prev();
+  },
+  onTogglePlaylist: () => {
+    panel.toggle();
   },
 });
 const unbindDrop = bindDropzone((files) => {
@@ -69,14 +74,16 @@ function frame(now: number): void {
 
   const s = player.snapshot();
   const track = s.count > 0 ? `${s.index + 1}/${s.count}` : "-";
+  panel.render(s);
 
   hud.textContent =
-    `fps  ${clock.fps.toFixed(1)}\n` +
-    `ctx  ${s.ctxState}\n` +
-    `mode ${visualizer.currentMode}\n` +
-    `rms  ${computeRms(timeBuf).toFixed(4)}\n` +
+    `stage ${stage.width}x${stage.height}\n` +
+    `fps   ${clock.fps.toFixed(1)}\n` +
+    `ctx   ${s.ctxState}\n` +
+    `mode  ${visualizer.currentMode}\n` +
+    `rms   ${computeRms(timeBuf).toFixed(4)}\n` +
     `track ${track}\n` +
-    `gain ${s.gain.toFixed(2)}`;
+    `gain  ${s.gain.toFixed(2)}`;
 
   controls.render(s);
   stage.render();
@@ -89,6 +96,7 @@ if (import.meta.hot) {
   import.meta.hot.dispose(() => {
     unbindDrop();
     unbindKeys();
+    panel.dispose();
     controls.dispose();
     player.dispose();
     visualizer.dispose();

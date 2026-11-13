@@ -5,6 +5,7 @@ export type KeyboardOptions = {
   onMode?: (mode: VisualMode) => void;
   onNext?: () => void;
   onPrev?: () => void;
+  onTogglePlaylist?: () => void;
 };
 
 export function bindKeyboard(
@@ -12,7 +13,7 @@ export function bindKeyboard(
   options: KeyboardOptions = {},
 ): () => void {
   const onKeyDown = (e: KeyboardEvent): void => {
-    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
 
     const el = e.target as HTMLElement | null;
     if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) return;
@@ -51,6 +52,9 @@ export function bindKeyboard(
         break;
       case "KeyP":
         options.onPrev?.();
+        break;
+      case "KeyL":
+        options.onTogglePlaylist?.();
         break;
       default:
         break;

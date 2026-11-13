@@ -21,7 +21,6 @@ export type Controls = {
 // 控制栏绑定 只调用 PlaylistPlayer 的公开方法
 export function bindControls(player: PlaylistPlayer): Controls {
   const fileInput = must<HTMLInputElement>("file");
-  const btnLoad = must<HTMLButtonElement>("btn-load");
   const btnPrev = must<HTMLButtonElement>("btn-prev");
   const btnBack = must<HTMLButtonElement>("btn-back");
   const btnPlay = must<HTMLButtonElement>("btn-play");
@@ -36,11 +35,6 @@ export function bindControls(player: PlaylistPlayer): Controls {
   // 进度条状态：lastDuration 供 input/change 换算，scrubbing 阻止 rAF 回写
   let lastDuration = 0;
   let scrubbing = false;
-
-  const onLoad = (): void => {
-    void player.unlock(); // 在同步的手势调用栈中恢复上下文
-    fileInput.click();
-  };
 
   const onChange = (): void => {
     // FileList 是 array-like，先转数组再清空
@@ -91,7 +85,6 @@ export function bindControls(player: PlaylistPlayer): Controls {
     player.seekTo(target);
   };
 
-  btnLoad.addEventListener("click", onLoad);
   btnPrev.addEventListener("click", onPrev);
   btnPlay.addEventListener("click", onPlay);
   btnNext.addEventListener("click", onNext);
@@ -153,7 +146,6 @@ export function bindControls(player: PlaylistPlayer): Controls {
       }
     },
     dispose(): void {
-      btnLoad.removeEventListener("click", onLoad);
       btnPrev.removeEventListener("click", onPrev);
       btnPlay.removeEventListener("click", onPlay);
       btnNext.removeEventListener("click", onNext);

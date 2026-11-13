@@ -5,8 +5,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>WebRysual</title>
   </head>
+
   <body>
     <div id="app"></div>
+    <button
+      id="panel-toggle"
+      class="panel-toggle"
+      type="button"
+      aria-label="播放列表"
+      aria-expanded="false"
+    >
+      <span></span><span></span><span></span>
+    </button>
+
+    <aside id="playlist" class="playlist" aria-label="播放列表">
+      <header class="playlist-header">
+        <span class="playlist-title"
+          >PLAYLIST-<span id="playlist-count">0</span></span
+        >
+      </header>
+
+      <ul id="playlist-list" class="playlist-list"></ul>
+
+      <footer class="playlist-footer">
+        <button id="playlist-add" type="button">添加曲目</button>
+      </footer>
+    </aside>
+
     <div id="hud" class="hud"></div>
     <div id="controls" class="controls">
       <input
@@ -19,7 +44,6 @@
         value="0"
         disabled
       />
-      <button id="btn-load" type="button">选择文件</button>
       <button id="btn-prev" type="button" disabled>上一首</button>
       <button id="btn-back" type="button" disabled>-5s</button>
       <button id="btn-play" type="button" disabled>播放</button>
