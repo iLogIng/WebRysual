@@ -6,6 +6,8 @@ export type PlayerSnapshot = EngineSnapshot & {
   index: number;
   count: number;
   loading: boolean;
+  // 列表内容变化计数
+  revision: number;
 };
 
 type LoadResult = "ok" | "skip" | "stale";
@@ -19,6 +21,9 @@ export class PlaylistPlayer {
 
   private readonly playlist = new Playlist();
   private loading = false;
+
+  // 当前已成功加载的 File，用于单曲循环时免解码
+  private currentFile: File | null = null;
 
   // 每次请求自增，用于丢弃过期的异步加载
   private requestId = 0;
@@ -66,7 +71,32 @@ export class PlaylistPlayer {
     const file = this.playlist.setIndex(index);
     if (!file) return Promise.resolve();
 
-    return this.loadAndPlay(file).then(() => undefined);
+    return this.loadFromCurrent(true);
+  }
+
+  // 移除指定曲目；若移除的是当前项，则续播/加载新的当前项
+  removeAt(index: number): void {
+    const wasCurrent = index === this.playlist.currentIndex;
+    const wasPlaying = this.engine.snapshot().playing;
+
+    const removed = this.playlist.remove(index);
+    if (!removed) return;
+
+    // 列表空: 停播并清空引擎状态
+    if (this.playlist.size === 0) {
+      this.currentFile = null;
+      this.engine.unload();
+      return;
+    }
+
+    // 删的不是当前项: 索引已修正，音频不受影响
+    if (!wasCurrent) return;
+
+    const file = this.playlist.current;
+    if (!file) return;
+
+    // 当前项被删: 播放中续播，暂停中只加载
+    void this.loadFromCurrent(wasPlaying);
   }
 
   next(): Promise<void> {
@@ -85,6 +115,10 @@ export class PlaylistPlayer {
     this.engine.seekBy(seconds);
   }
 
+  seekTo(seconds: number): void {
+    this.engine.seekTo(seconds);
+  }
+
   changeGain(delta: number): void {
     this.engine.changeGain(delta);
   }
@@ -95,12 +129,14 @@ export class PlaylistPlayer {
       index: this.playlist.currentIndex,
       count: this.playlist.size,
       loading: this.loading,
+      revision: this.playlist.revision,
     };
   }
 
   dispose(): void {
     this.requestId++;
     this.engine.onEnded = null;
+    this.currentFile = null;
     this.playlist.clear();
   }
 
@@ -109,17 +145,36 @@ export class PlaylistPlayer {
     const count = this.playlist.size;
     if (count === 0) return;
 
+    const file = this.playlist.move(direction);
+    if (!file) return;
+
+    // 单曲循环: 当前 buffer 就是这首，直接从头重播，免解码
+    if (count === 1 && this.currentFile === file) {
+      this.engine.seekTo(0);
+      await this.engine.play();
+      return;
+    }
+
+    await this.loadFromCurrent(true);
+  }
+
+  // 从当前索引开始加载，失败则向后跳过，最多一圈
+  private async loadFromCurrent(autoplay: boolean): Promise<void> {
+    const count = this.playlist.size;
+
     for (let attempt = 0; attempt < count; attempt++) {
-      const file = this.playlist.move(direction);
+      const file = this.playlist.current;
       if (!file) return;
 
-      const result = await this.loadAndPlay(file);
+      const result = await this.loadAndPlay(file, autoplay);
       if (result === "ok" || result === "stale") return;
+
       // "skip": 尝试下一首
+      this.playlist.move(1);
     }
   }
 
-  private async loadAndPlay(file: File): Promise<LoadResult> {
+  private async loadAndPlay(file: File, autoplay = true): Promise<LoadResult> {
     const id = ++this.requestId;
     this.loading = true;
 
@@ -129,8 +184,12 @@ export class PlaylistPlayer {
       // 被更晚的请求取代
       if (id !== this.requestId || !loaded) return "stale";
 
-      await this.engine.play();
-      if (id !== this.requestId) return "stale";
+      this.currentFile = file;
+
+      if (autoplay) {
+        await this.engine.play();
+        if (id !== this.requestId) return "stale";
+      }
 
       return "ok";
     } catch (err) {

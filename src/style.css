@@ -71,6 +71,18 @@ body {
   cursor: default;
 }
 
+.controls .seek {
+  flex: 1 1 100%;
+  width: 100%;
+  accent-color: #66ccff;
+  cursor: pointer;
+}
+
+.controls .seek:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
 .track {
   max-width: 240px;
   overflow: hidden;

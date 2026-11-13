@@ -168,11 +168,11 @@ export class AudioEngine {
     this.paused = true;
   }
 
-  seekBy(seconds: number): void {
+  seekTo(seconds: number): void {
     if (!this.buffer) return;
 
+    const target = clamp(seconds, 0, this.buffer.duration);
     const wasPlaying = this.isPlaying();
-    const target = clamp(this.currentTime() + seconds, 0, this.buffer.duration);
 
     this.stopSource();
     this.startOffset = target;
@@ -182,6 +182,21 @@ export class AudioEngine {
     } else {
       this.paused = true;
     }
+  }
+
+  seekBy(seconds: number): void {
+    this.seekTo(this.currentTime() + seconds);
+  }
+
+  // 停止播放并清空当前曲目（保持 AudioContext 可用）
+  unload(): void {
+    this.loadId++;
+    this.stopSource();
+    this.buffer = null;
+    this._trackName = null;
+    this.startOffset = 0;
+    this.startCtxTime = 0;
+    this.paused = true;
   }
 
   changeGain(delta: number): void {

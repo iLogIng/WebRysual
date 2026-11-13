@@ -31,6 +31,11 @@ export function bindControls(player: PlaylistPlayer): Controls {
   const btnVolUp = must<HTMLButtonElement>("btn-vol-up");
   const trackEl = must<HTMLSpanElement>("track");
   const timeEl = must<HTMLSpanElement>("time");
+  const seekEl = must<HTMLInputElement>("seek");
+
+  // 进度条状态：lastDuration 供 input/change 换算，scrubbing 阻止 rAF 回写
+  let lastDuration = 0;
+  let scrubbing = false;
 
   const onLoad = (): void => {
     void player.unlock(); // 在同步的手势调用栈中恢复上下文
@@ -68,6 +73,24 @@ export function bindControls(player: PlaylistPlayer): Controls {
     player.changeGain(0.05);
   };
 
+  const onSeekInput = (): void => {
+    scrubbing = true;
+    if (lastDuration <= 0) return;
+
+    const t = (Number(seekEl.value) / 1000) * lastDuration;
+    timeEl.textContent = `${fmt(t)} / ${fmt(lastDuration)}`;
+  };
+
+  const onSeekChange = (): void => {
+    scrubbing = false;
+    if (lastDuration <= 0) return;
+
+    const raw = (Number(seekEl.value) / 1000) * lastDuration;
+    // 避免拖到 100% 时立刻触发 ended
+    const target = Math.min(raw, Math.max(0, lastDuration - 0.05));
+    player.seekTo(target);
+  };
+
   btnLoad.addEventListener("click", onLoad);
   btnPrev.addEventListener("click", onPrev);
   btnPlay.addEventListener("click", onPlay);
@@ -76,6 +99,8 @@ export function bindControls(player: PlaylistPlayer): Controls {
   btnFwd.addEventListener("click", onFwd);
   btnVolDown.addEventListener("click", onVolDown);
   btnVolUp.addEventListener("click", onVolUp);
+  seekEl.addEventListener("input", onSeekInput);
+  seekEl.addEventListener("change", onSeekChange);
   fileInput.addEventListener("change", onChange);
 
   // 只在文本变化时写 DOM
@@ -92,12 +117,16 @@ export function bindControls(player: PlaylistPlayer): Controls {
       const loaded = s.trackName !== null;
       const hasList = s.count > 0;
 
+      lastDuration = s.duration;
+      const seekable = s.duration > 0 && !s.loading;
+
       btnPlay.textContent = s.playing ? "暂停" : "播放";
       btnPlay.disabled = !loaded;
       btnBack.disabled = !loaded;
       btnFwd.disabled = !loaded;
       btnPrev.disabled = !hasList;
       btnNext.disabled = !hasList;
+      seekEl.disabled = !seekable;
 
       if (s.loading) {
         setTrack(`${s.index + 1}/${s.count} 解码中…`);
@@ -111,7 +140,16 @@ export function bindControls(player: PlaylistPlayer): Controls {
       if (now - lastPaint >= 100) {
         // 时间文本 10Hz 足够
         lastPaint = now;
-        timeEl.textContent = `${fmt(s.currentTime)} / ${fmt(s.duration)}`;
+
+        if (!scrubbing) {
+          timeEl.textContent = `${fmt(s.currentTime)} / ${fmt(s.duration)}`;
+
+          if (seekable) {
+            seekEl.value = String(
+              Math.round((s.currentTime / s.duration) * 1000),
+            );
+          }
+        }
       }
     },
     dispose(): void {
@@ -123,6 +161,8 @@ export function bindControls(player: PlaylistPlayer): Controls {
       btnFwd.removeEventListener("click", onFwd);
       btnVolDown.removeEventListener("click", onVolDown);
       btnVolUp.removeEventListener("click", onVolUp);
+      seekEl.removeEventListener("input", onSeekInput);
+      seekEl.removeEventListener("change", onSeekChange);
       fileInput.removeEventListener("change", onChange);
     },
   };
