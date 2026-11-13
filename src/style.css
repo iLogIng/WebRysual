@@ -28,7 +28,7 @@ body {
   line-height: 1.5;
   white-space: pre;
   pointer-events: none;
-  background: rgba(00, 0, 0, 0.35);
+  background: rgba(0, 0, 0, 0.35);
   border-radius: 6px;
 }
 
