@@ -3,6 +3,8 @@
 // Ctrl/脚本触发的无效拖拽在部分浏览器也会触发事件，
 // 这里只负责把"用户放下的文件"过滤后交给上层
 
+import { collectFiles } from "./fsEntries";
+
 const AUDIO_EXT = /\.(mp3|wav|flac|ogg|oga|opus|m4a|aac|webm|mp4|wma)$/i;
 
 function isAudioFile(file: File): boolean {
@@ -43,9 +45,27 @@ export function bindDropzone(onFiles: (files: File[]) => void): () => void {
     depth = 0;
     setDragging(false);
 
-    // FileList 是 array-like，不是数组
-    const files = Array.from(e.dataTransfer?.files ?? []).filter(isAudioFile);
-    if (files.length > 0) onFiles(files);
+    const dt = e.dataTransfer;
+    if (!dt) return;
+
+    // items 和 files 必须在事件同步栈内读取，await 之后会失效
+    const items = dt.items;
+    const fallback = Array.from(dt.files ?? []).filter(isAudioFile);
+
+    void (async () => {
+      let files: File[] = [];
+
+      if (items.length > 0) {
+        try {
+          files = await collectFiles(items);
+        } catch (err) {
+          console.warn("[dropzone] directory scan failed", err);
+        }
+      }
+
+      if (files.length === 0) files = fallback;
+      if (files.length > 0) onFiles(files);
+    })();
   };
 
   window.addEventListener("dragenter", onDragEnter);

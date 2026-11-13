@@ -12,6 +12,14 @@ export type PlayerSnapshot = EngineSnapshot & {
 
 type LoadResult = "ok" | "skip" | "stale";
 
+export type PlayerError =
+  | { kind: "decode"; file: File; error: unknown }
+  | { kind: "play"; file: File; error: unknown };
+
+function isNotAllowedError(err: unknown): boolean {
+  return err instanceof DOMException && err.name === "NotAllowedError";
+}
+
 // 负责协调播放列表
 //
 // 把 File 列表接入 AudioEngine、自然结束时自动下一首、
@@ -27,6 +35,9 @@ export class PlaylistPlayer {
 
   // 每次请求自增，用于丢弃过期的异步加载
   private requestId = 0;
+
+  // 解码/播放错误回调，由 UI 层接 toast
+  onError: ((e: PlayerError) => void) | null = null;
 
   constructor(engine: AudioEngine) {
     this.engine = engine;
@@ -136,6 +147,7 @@ export class PlaylistPlayer {
   dispose(): void {
     this.requestId++;
     this.engine.onEnded = null;
+    this.onError = null;
     this.currentFile = null;
     this.playlist.clear();
   }
@@ -179,7 +191,17 @@ export class PlaylistPlayer {
     this.loading = true;
 
     try {
-      const loaded = await this.engine.load(file);
+      let loaded: boolean;
+
+      try {
+        loaded = await this.engine.load(file);
+      } catch (err) {
+        if (id !== this.requestId) return "stale";
+
+        console.warn(`[playlist] decode failed: ${file.name}`, err);
+        this.onError?.({ kind: "decode", file, error: err });
+        return "skip";
+      }
 
       // 被更晚的请求取代
       if (id !== this.requestId || !loaded) return "stale";
@@ -187,16 +209,23 @@ export class PlaylistPlayer {
       this.currentFile = file;
 
       if (autoplay) {
-        await this.engine.play();
+        try {
+          await this.engine.play();
+        } catch (err) {
+          if (id !== this.requestId) return "stale";
+
+          console.warn(`[playlist] play failed: ${file.name}`, err);
+          this.onError?.({ kind: "play", file, error: err });
+
+          // 自动播放被策略拦截时保留当前曲目，不跳过
+          if (isNotAllowedError(err)) return "ok";
+          return "skip";
+        }
+
         if (id !== this.requestId) return "stale";
       }
 
       return "ok";
-    } catch (err) {
-      if (id !== this.requestId) return "stale";
-
-      console.warn(`[playlist] skip: ${file.name}`, err);
-      return "skip";
     } finally {
       if (id === this.requestId) {
         this.loading = false;

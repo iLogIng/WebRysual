@@ -29,6 +29,7 @@ export function bindPlaylistPanel(player: PlaylistPlayer): PlaylistPanel {
 
   let lastKey = "";
   let lastActiveIndex = -1;
+  let pendingFocusIndex: number | null = null;
 
   const scrollToActive = (): void => {
     if (!root.classList.contains("open")) return;
@@ -66,16 +67,23 @@ export function bindPlaylistPanel(player: PlaylistPlayer): PlaylistPanel {
     );
     if (removeBtn) {
       const li = removeBtn.closest<HTMLLIElement>("li[data-index]");
-      if (li) player.removeAt(Number(li.dataset.index));
+      if (li) {
+        const index = Number(li.dataset.index);
+        player.removeAt(index);
+
+        // 下一帧重建后恢复焦点到相邻项
+        pendingFocusIndex = Math.min(
+          index,
+          Math.max(0, player.files.length - 1),
+        );
+      }
       return;
     }
 
-    const playBtn = target.closest<HTMLButtonElement>(
-      "button[data-action='play']",
-    );
-    if (playBtn) {
-      const li = playBtn.closest<HTMLLIElement>("li[data-index]");
-      if (li) void player.playIndex(Number(li.dataset.index));
+    // 整行可点: 文件名按钮、行背景都触发播放
+    const li = target.closest<HTMLLIElement>("li[data-index]");
+    if (li) {
+      void player.playIndex(Number(li.dataset.index));
     }
   };
 
@@ -105,7 +113,6 @@ export function bindPlaylistPanel(player: PlaylistPlayer): PlaylistPanel {
         const nameBtn = document.createElement("button");
         nameBtn.type = "button";
         nameBtn.className = "track-name";
-        nameBtn.dataset.action = "play";
         nameBtn.textContent = stripExt(file.name);
         nameBtn.title = file.name;
 
@@ -120,11 +127,36 @@ export function bindPlaylistPanel(player: PlaylistPlayer): PlaylistPanel {
         frag.append(li);
       });
 
+      if (player.files.length === 0) {
+        const empty = document.createElement("li");
+        empty.className = "playlist-empty";
+        empty.textContent = "暂无曲目，请点击下方添加";
+        frag.append(empty);
+      }
+
       listEl.replaceChildren(frag);
 
       if (s.index !== lastActiveIndex) {
         lastActiveIndex = s.index;
         scrollToActive();
+      }
+
+      if (pendingFocusIndex !== null) {
+        const idx = pendingFocusIndex;
+        pendingFocusIndex = null;
+
+        if (root.classList.contains("open")) {
+          if (player.files.length === 0) {
+            addBtn.focus();
+          } else {
+            const target = Math.min(idx, player.files.length - 1);
+            listEl
+              .querySelector<HTMLButtonElement>(
+                `li[data-index="${target}"] .track-name`,
+              )
+              ?.focus();
+          }
+        }
       }
     },
 

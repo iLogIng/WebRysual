@@ -7,6 +7,7 @@ import { bindControls } from "./ui/controls";
 import { bindKeyboard } from "./ui/input";
 import { bindDropzone } from "./ui/dropzone";
 import { bindPlaylistPanel } from "./ui/PlaylistPanel";
+import { showToast, clearToasts } from "./ui/toast";
 import { computeRms } from "./audio/dsp";
 
 function mustElement<T extends Element>(selector: string): T {
@@ -21,6 +22,22 @@ const hud = mustElement<HTMLDivElement>("#hud");
 const stage = new Stage(app);
 const engine = new AudioEngine();
 const player = new PlaylistPlayer(engine);
+
+player.onError = (e) => {
+  if (e.kind === "decode") {
+    showToast(`已跳过：${e.file.name}（无法解码）`, {
+      id: "decode-error",
+      tone: "error",
+    });
+    return;
+  }
+
+  showToast("浏览器阻止了播放，请再次点击播放按钮", {
+    id: "autoplay",
+    tone: "info",
+  });
+};
+
 const visualizer = new AudioVisualizer({
   sampleRate: engine.sampleRate,
   fftSize: engine.analyser.fftSize,
@@ -102,6 +119,7 @@ if (import.meta.hot) {
     visualizer.dispose();
     engine.dispose();
     stage.dispose();
+    clearToasts();
   });
 }
 
