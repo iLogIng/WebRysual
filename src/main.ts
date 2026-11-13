@@ -1,9 +1,11 @@
 import "./style.css";
 import { Stage } from "./visual/Stage";
 import { AudioEngine } from "./audio/AudioEngine";
+import { PlaylistPlayer } from "./audio/PlaylistPlayer";
 import { AudioVisualizer } from "./visual/AudioVisualizer";
 import { bindControls } from "./ui/controls";
 import { bindKeyboard } from "./ui/input";
+import { bindDropzone } from "./ui/dropzone";
 import { computeRms } from "./audio/dsp";
 
 function mustElement<T extends Element>(selector: string): T {
@@ -17,17 +19,29 @@ const hud = mustElement<HTMLDivElement>("#hud");
 
 const stage = new Stage(app);
 const engine = new AudioEngine();
+const player = new PlaylistPlayer(engine);
 const visualizer = new AudioVisualizer({
   sampleRate: engine.sampleRate,
   fftSize: engine.analyser.fftSize,
 });
 stage.scene.add(visualizer.object);
 
-const controls = bindControls(engine);
+const controls = bindControls(player);
 const unbindKeys = bindKeyboard(engine, {
   onMode: (mode) => {
     visualizer.setMode(mode);
   },
+  onNext: () => {
+    void player.next();
+  },
+  onPrev: () => {
+    void player.prev();
+  },
+});
+const unbindDrop = bindDropzone((files) => {
+  // drop 是用户手势，先同步恢复上下文，避免解码后才 resume 被拦截
+  void player.unlock();
+  player.addFiles(files);
 });
 
 // 预分配，每帧复用
@@ -53,12 +67,15 @@ function frame(now: number): void {
     heightPx: stage.height,
   });
 
-  const s = engine.snapshot();
+  const s = player.snapshot();
+  const track = s.count > 0 ? `${s.index + 1}/${s.count}` : "-";
+
   hud.textContent =
     `fps  ${clock.fps.toFixed(1)}\n` +
     `ctx  ${s.ctxState}\n` +
     `mode ${visualizer.currentMode}\n` +
     `rms  ${computeRms(timeBuf).toFixed(4)}\n` +
+    `track ${track}\n` +
     `gain ${s.gain.toFixed(2)}`;
 
   controls.render(s);
@@ -70,8 +87,10 @@ requestAnimationFrame(frame);
 
 if (import.meta.hot) {
   import.meta.hot.dispose(() => {
+    unbindDrop();
     unbindKeys();
     controls.dispose();
+    player.dispose();
     visualizer.dispose();
     engine.dispose();
     stage.dispose();
@@ -81,7 +100,11 @@ if (import.meta.hot) {
 if (import.meta.env.DEV) {
   (
     window as unknown as {
-      __app: { engine: AudioEngine; visualizer: AudioVisualizer };
+      __app: {
+        engine: AudioEngine;
+        player: PlaylistPlayer;
+        visualizer: AudioVisualizer;
+      };
     }
-  ).__app = { engine, visualizer };
+  ).__app = { engine, player, visualizer };
 }

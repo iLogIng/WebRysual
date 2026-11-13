@@ -1,8 +1,8 @@
-import type { AudioEngine, EngineSnapshot } from "../audio/AudioEngine";
+import type { PlayerSnapshot, PlaylistPlayer } from "../audio/PlaylistPlayer";
 
 function must<T extends HTMLElement>(id: string): T {
   const el = document.getElementById(id);
-  if (!el) throw new Error(`mission #${id}`);
+  if (!el) throw new Error(`missing #${id}`);
   return el as T;
 }
 
@@ -14,69 +14,69 @@ function fmt(sec: number): string {
 }
 
 export type Controls = {
-  render(s: EngineSnapshot): void;
+  render(s: PlayerSnapshot): void;
   dispose(): void;
 };
 
-// 控制器绑定
-export function bindControls(engine: AudioEngine): Controls {
+// 控制栏绑定 只调用 PlaylistPlayer 的公开方法
+export function bindControls(player: PlaylistPlayer): Controls {
   const fileInput = must<HTMLInputElement>("file");
   const btnLoad = must<HTMLButtonElement>("btn-load");
+  const btnPrev = must<HTMLButtonElement>("btn-prev");
   const btnBack = must<HTMLButtonElement>("btn-back");
   const btnPlay = must<HTMLButtonElement>("btn-play");
   const btnFwd = must<HTMLButtonElement>("btn-fwd");
+  const btnNext = must<HTMLButtonElement>("btn-next");
   const btnVolDown = must<HTMLButtonElement>("btn-vol-down");
   const btnVolUp = must<HTMLButtonElement>("btn-vol-up");
   const trackEl = must<HTMLSpanElement>("track");
   const timeEl = must<HTMLSpanElement>("time");
 
   const onLoad = (): void => {
-    void engine.unlock(); // 在同步的手势调用栈中恢复上下文
+    void player.unlock(); // 在同步的手势调用栈中恢复上下文
     fileInput.click();
   };
 
-  // 更换
-  const onChange = async (): Promise<void> => {
-    const file = fileInput.files?.[0];
+  const onChange = (): void => {
+    // FileList 是 array-like，先转数组再清空
+    const files = Array.from(fileInput.files ?? []);
     fileInput.value = "";
-    if (!file) return;
-    setTrack("decoding...");
-    try {
-      await engine.load(file);
-      await engine.play();
-    } catch (err) {
-      console.error(err);
-      setTrack("load failed...");
-    }
-  };
+    if (files.length === 0) return;
 
-  const onChangeEvent = (): void => {
-    void onChange();
+    player.addFiles(files);
   };
 
   const onPlay = (): void => {
-    void engine.toggle();
+    void player.toggle();
+  };
+  const onPrev = (): void => {
+    void player.prev();
+  };
+  const onNext = (): void => {
+    void player.next();
   };
   const onBack = (): void => {
-    engine.seekBy(-5);
+    player.seekBy(-5);
   };
   const onFwd = (): void => {
-    engine.seekBy(5);
+    player.seekBy(5);
   };
   const onVolDown = (): void => {
-    engine.changeGain(-0.05);
+    player.changeGain(-0.05);
   };
   const onVolUp = (): void => {
-    engine.changeGain(0.05);
+    player.changeGain(0.05);
   };
 
   btnLoad.addEventListener("click", onLoad);
+  btnPrev.addEventListener("click", onPrev);
   btnPlay.addEventListener("click", onPlay);
+  btnNext.addEventListener("click", onNext);
   btnBack.addEventListener("click", onBack);
   btnFwd.addEventListener("click", onFwd);
   btnVolDown.addEventListener("click", onVolDown);
   btnVolUp.addEventListener("click", onVolUp);
-  fileInput.addEventListener("change", onChangeEvent);
+  fileInput.addEventListener("change", onChange);
 
   // 只在文本变化时写 DOM
   let trackText = "";
@@ -88,15 +88,24 @@ export function bindControls(engine: AudioEngine): Controls {
 
   let lastPaint = 0;
   return {
-    render(s: EngineSnapshot): void {
-      btnPlay.textContent = s.playing ? "暂停" : "播放";
-
+    render(s: PlayerSnapshot): void {
       const loaded = s.trackName !== null;
+      const hasList = s.count > 0;
+
+      btnPlay.textContent = s.playing ? "暂停" : "播放";
       btnPlay.disabled = !loaded;
       btnBack.disabled = !loaded;
       btnFwd.disabled = !loaded;
+      btnPrev.disabled = !hasList;
+      btnNext.disabled = !hasList;
 
-      if (s.trackName) setTrack(s.trackName);
+      if (s.loading) {
+        setTrack(`${s.index + 1}/${s.count} 解码中…`);
+      } else if (s.trackName) {
+        setTrack(`${s.index + 1}/${s.count} ${s.trackName}`);
+      } else {
+        setTrack("未加载");
+      }
 
       const now = performance.now();
       if (now - lastPaint >= 100) {
@@ -107,12 +116,14 @@ export function bindControls(engine: AudioEngine): Controls {
     },
     dispose(): void {
       btnLoad.removeEventListener("click", onLoad);
+      btnPrev.removeEventListener("click", onPrev);
       btnPlay.removeEventListener("click", onPlay);
+      btnNext.removeEventListener("click", onNext);
       btnBack.removeEventListener("click", onBack);
       btnFwd.removeEventListener("click", onFwd);
       btnVolDown.removeEventListener("click", onVolDown);
       btnVolUp.removeEventListener("click", onVolUp);
-      fileInput.removeEventListener("change", onChangeEvent);
+      fileInput.removeEventListener("change", onChange);
     },
   };
 }

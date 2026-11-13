@@ -38,8 +38,12 @@ body {
   bottom: 20px;
   transform: translateX(-50%);
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: center;
   gap: 8px;
+  max-width: calc(100vw - 24px);
+  box-sizing: border-box;
   padding: 10px 14px;
   background: rgba(0, 0, 0, 0.45);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -48,7 +52,7 @@ body {
   z-index: 10;
 }
 
-.controls {
+.controls button {
   font: inherit;
   color: inherit;
   padding: 6px 10px;
@@ -68,7 +72,7 @@ body {
 }
 
 .track {
-  max-width: 220px;
+  max-width: 240px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -76,4 +80,20 @@ body {
 
 .time {
   color: #9fb0b5;
+}
+
+/* 拖拽提示层 */
+body.dragging::after {
+  content: "松开以添加音频";
+  position: fixed;
+  inset: 12px;
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  color: #66ccff;
+  background: rgba(0, 0, 0, 0.45);
+  border: 2px dashed rgba(102, 204, 255, 0.8);
+  border-radius: 12px;
+  pointer-events: none;
+  z-index: 100;
 }

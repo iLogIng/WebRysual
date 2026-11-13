@@ -3,6 +3,8 @@ import type { VisualMode } from "../visual/AudioVisualizer";
 
 export type KeyboardOptions = {
   onMode?: (mode: VisualMode) => void;
+  onNext?: () => void;
+  onPrev?: () => void;
 };
 
 export function bindKeyboard(
@@ -43,6 +45,12 @@ export function bindKeyboard(
       case "Digit2":
       case "Numpad2":
         options.onMode?.("waveform");
+        break;
+      case "KeyN":
+        options.onNext?.();
+        break;
+      case "KeyP":
+        options.onPrev?.();
         break;
       default:
         break;

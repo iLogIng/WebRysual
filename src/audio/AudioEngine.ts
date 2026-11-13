@@ -40,6 +40,9 @@ export class AudioEngine {
   // 停止标记
   private paused = false;
 
+  // 加载代次：丢弃过期的解码结果
+  private loadId = 0;
+
   constructor() {
     this.ctx = new AudioContext();
 
@@ -114,16 +117,23 @@ export class AudioEngine {
     }
   }
 
-  async load(file: File): Promise<void> {
+  // 返回 false 表示本次加载已被更新的请求取代
+  async load(file: File): Promise<boolean> {
+    const id = ++this.loadId;
+
     if (!this.paused) this.pause();
 
     const arrayBuffer = await file.arrayBuffer();
-    this.buffer = await this.ctx.decodeAudioData(arrayBuffer);
+    const buffer = await this.ctx.decodeAudioData(arrayBuffer);
 
+    if (id !== this.loadId) return false;
+
+    this.buffer = buffer;
     this._trackName = file.name;
     this.paused = false;
     this.startOffset = 0;
     this.startCtxTime = 0;
+    return true;
   }
 
   async play(): Promise<void> {
@@ -195,6 +205,7 @@ export class AudioEngine {
   }
 
   dispose(): void {
+    this.loadId++;
     this.stopSource();
     void this.ctx.close();
     this.buffer = null;
