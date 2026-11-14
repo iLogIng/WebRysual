@@ -1,6 +1,11 @@
 import * as THREE from "three";
 import { Spectrum } from "./modes/Spectrum";
 import { Waveform } from "./modes/Waveform";
+import {
+  DEFAULT_SPECTRUM_GRADIENT,
+  DEFAULT_WAVEFORM_GRADIENT,
+  type GradientConfig,
+} from "./gradient";
 
 // 显示模式
 export type VisualMode = "spectrum" | "waveform";
@@ -17,6 +22,10 @@ export type VisualFrame = {
 export type AudioVisualizerOptions = {
   sampleRate: number;
   fftSize: number;
+  gradients?: {
+    spectrum?: GradientConfig;
+    waveform?: GradientConfig;
+  };
 };
 
 // 显示模式载体
@@ -31,11 +40,25 @@ export class AudioVisualizer {
   private mode: VisualMode = "spectrum";
 
   constructor(options: AudioVisualizerOptions) {
-    this.waveform = new Waveform();
-    this.spectrum = new Spectrum(options.sampleRate, options.fftSize);
+    this.waveform = new Waveform(
+      options.gradients?.waveform ?? DEFAULT_WAVEFORM_GRADIENT,
+    );
+    this.spectrum = new Spectrum({
+      sampleRate: options.sampleRate,
+      fftSize: options.fftSize,
+      gradient: options.gradients?.spectrum ?? DEFAULT_SPECTRUM_GRADIENT,
+    });
 
     this.object.add(this.waveform.object, this.spectrum.object);
     this.applyMode();
+  }
+
+  setGradients(gradients: {
+    spectrum?: GradientConfig;
+    waveform?: GradientConfig;
+  }): void {
+    if (gradients.spectrum) this.spectrum.setGradient(gradients.spectrum);
+    if (gradients.waveform) this.waveform.setGradient(gradients.waveform);
   }
 
   get currentMode(): VisualMode {

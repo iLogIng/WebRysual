@@ -228,11 +228,14 @@ body.dragging::after {
 }
 
 .playlist-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   padding: 12px 16px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-#playlist-add {
+.playlist-footer button {
   width: 100%;
   padding: 8px;
   font: inherit;
@@ -243,8 +246,17 @@ body.dragging::after {
   cursor: pointer;
 }
 
-#playlist-add:hover {
+.playlist-footer button:hover {
   background: rgba(255, 255, 255, 0.16);
+}
+
+.wallpaper-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.wallpaper-actions button {
+  flex: 1;
 }
 
 /* toast */

@@ -3,10 +3,12 @@ import { Stage } from "./visual/Stage";
 import { AudioEngine } from "./audio/AudioEngine";
 import { PlaylistPlayer } from "./audio/PlaylistPlayer";
 import { AudioVisualizer } from "./visual/AudioVisualizer";
+import { BackgroundLayer } from "./visual/BackgroundLayer";
 import { bindControls } from "./ui/controls";
 import { bindKeyboard } from "./ui/input";
 import { bindDropzone } from "./ui/dropzone";
 import { bindPlaylistPanel } from "./ui/PlaylistPanel";
+import { bindWallpaper } from "./ui/wallpaper";
 import { showToast, clearToasts } from "./ui/toast";
 import { computeRms } from "./audio/dsp";
 
@@ -20,6 +22,9 @@ const app = mustElement<HTMLDivElement>("#app");
 const hud = mustElement<HTMLDivElement>("#hud");
 
 const stage = new Stage(app);
+const background = new BackgroundLayer();
+stage.scene.add(background.object);
+
 const engine = new AudioEngine();
 const player = new PlaylistPlayer(engine);
 
@@ -65,6 +70,7 @@ const unbindDrop = bindDropzone((files) => {
   void player.unlock();
   player.addFiles(files);
 });
+const unbindWallpaper = bindWallpaper(background);
 
 // 预分配，每帧复用
 const timeBuf = new Float32Array(engine.analyser.fftSize);
@@ -89,6 +95,8 @@ function frame(now: number): void {
     heightPx: stage.height,
   });
 
+  background.setViewport(stage.viewWidth, stage.viewHeight);
+
   const s = player.snapshot();
   const track = s.count > 0 ? `${s.index + 1}/${s.count}` : "-";
   panel.render(s);
@@ -112,11 +120,13 @@ requestAnimationFrame(frame);
 if (import.meta.hot) {
   import.meta.hot.dispose(() => {
     unbindDrop();
+    unbindWallpaper();
     unbindKeys();
     panel.dispose();
     controls.dispose();
     player.dispose();
     visualizer.dispose();
+    background.dispose();
     engine.dispose();
     stage.dispose();
     clearToasts();

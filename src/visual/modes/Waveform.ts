@@ -3,6 +3,13 @@ import { Line2 } from "three/examples/jsm/lines/Line2.js";
 import { LineGeometry } from "three/examples/jsm/lines/LineGeometry.js";
 import { LineMaterial } from "three/examples/jsm/lines/LineMaterial.js";
 import { VIEW_H, WAVE_POINTS } from "../constants";
+import {
+  DEFAULT_WAVEFORM_GRADIENT,
+  prepareGradient,
+  sampleGradientHsl,
+  type GradientConfig,
+  type Hsl,
+} from "../gradient";
 
 const AMPLITUDE = VIEW_H * 0.35;
 
@@ -13,16 +20,19 @@ export class Waveform {
   private readonly material: LineMaterial;
   private readonly line: Line2;
   private readonly positions = new Float32Array(WAVE_POINTS * 3);
+  private readonly colors = new Float32Array(WAVE_POINTS * 3);
+  private readonly color = new THREE.Color();
 
   private readonly baseGeometry = new THREE.BufferGeometry();
   private readonly baseLine: THREE.Line;
 
   private rmsValue = 0;
 
-  constructor() {
+  constructor(gradient: GradientConfig = DEFAULT_WAVEFORM_GRADIENT) {
     this.material = new LineMaterial({
-      color: 0x66ccff,
+      color: 0xffffff,
       linewidth: 2, // CSS 像素
+      vertexColors: true,
     });
 
     // 初始为一条平直线，避免零长度线段
@@ -32,6 +42,7 @@ export class Waveform {
       this.positions[c * 3 + 2] = 0;
     }
     this.geometry.setPositions(this.positions);
+    this.setGradient(gradient);
 
     this.line = new Line2(this.geometry, this.material);
     this.line.frustumCulled = false;
@@ -51,6 +62,23 @@ export class Waveform {
 
   get rms(): number {
     return this.rmsValue;
+  }
+
+  // 重建顶点颜色；颜色只与横向位置有关，不需要每帧更新
+  setGradient(config: GradientConfig): void {
+    const gradient = prepareGradient(config);
+    const hsl: Hsl = { h: 0, s: 0, l: 0 };
+
+    for (let i = 0; i < WAVE_POINTS; i++) {
+      sampleGradientHsl(gradient, i / (WAVE_POINTS - 1), hsl);
+      this.color.setHSL(hsl.h, hsl.s, hsl.l, THREE.SRGBColorSpace);
+
+      this.colors[i * 3] = this.color.r;
+      this.colors[i * 3 + 1] = this.color.g;
+      this.colors[i * 3 + 2] = this.color.b;
+    }
+
+    this.geometry.setColors(this.colors);
   }
 
   // widthPx/heightPx 用 CSS 像素，不是 devicePixelRatio 后的缓冲尺寸
@@ -104,9 +132,9 @@ export class Waveform {
     base.setXYZ(1, viewWidth / 2, 0, 0);
     base.needsUpdate = true;
 
-    // 响度决定亮度
-    const lightness = 0.45 + Math.min(this.rmsValue * 2, 0.35);
-    this.material.color.setHSL(0.52, 1, lightness, THREE.SRGBColorSpace);
+    // 响度决定亮度：默认渐变基色明度为 0.8，目标区间 0.4 .. 0.8
+    const targetLightness = 0.4 + Math.min(this.rmsValue * 2, 0.4);
+    this.material.color.setScalar(targetLightness / 0.8);
   }
 
   dispose(): void {
