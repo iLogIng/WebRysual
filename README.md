@@ -2,6 +2,8 @@
 
 > 浏览器端音频可视化器，从 `SDL3 + FFmpeg` 版 Rysual 迁移到 `Web Audio API + Three.js`。
 
+**线上地址**：https://iLogIng.github.io/WebRysual/
+
 **技术栈**
 - TypeScript + Vite（无前端框架）
 - Three.js
@@ -47,6 +49,13 @@ npm run build     # 类型检查 + 生产构建
 npm run preview   # 预览生产构建
 ```
 
+## 部署
+
+- 托管：GitHub Pages 项目页
+- 地址：https://iLogIng.github.io/WebRysual/
+- Vite `base`：`/WebRysual/`
+- 推送 `master` 后，由 `.github/workflows/deploy.yml` 自动执行测试、构建并发布
+
 ## 进度
 
 | 阶段 | 内容 | 状态 |
@@ -60,15 +69,15 @@ npm run preview   # 预览生产构建
 | P1 | 共用渐变、两种模式渐变、图片壁纸 | 完成 |
 | P2 | 全屏 API、空闲光标隐藏 | 完成 |
 | P3 | 单元测试、README 同步、浏览器矩阵 | 完成（矩阵待实测） |
-| P4 | 性能调优 | 待开始 |
-| P5 | 部署与平台化 | 待开始 |
+| P4 | 性能调优 | 延后 |
+| P5 | 部署：GitHub Pages 项目页 | 完成 |
 | P6 | 3D / Bloom | 待开始 |
 
 原 M4 Simulated 已移除；原 M5 的全屏与目录拖拽已完成。
 
 ## TODO
 
-### P4 · 性能调优
+### P4 · 性能调优（延后）
 
 - [ ] HUD / controls 每帧 DOM 写入 → 10Hz 或变化时才写
 - [ ] Waveform 预分配缓冲，避免每帧 `setPositions` 分配
@@ -77,7 +86,8 @@ npm run preview   # 预览生产构建
 
 ### P5 · 部署与平台化
 
-- [ ] 静态托管、Vite `base`、HTTPS
+- [x] 静态托管、Vite `base`、HTTPS
+- [x] GitHub Actions 自动部署
 - [ ] 多面板 / 双窗口远期设计
 
 ### P6 · 3D / Bloom
