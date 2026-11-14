@@ -10,6 +10,7 @@ import { bindDropzone } from "./ui/dropzone";
 import { bindPlaylistPanel } from "./ui/PlaylistPanel";
 import { bindWallpaper } from "./ui/wallpaper";
 import { bindFullscreen } from "./ui/fullscreen";
+import { bindHelp } from "./ui/help";
 import { showToast, clearToasts } from "./ui/toast";
 import { computeRms } from "./audio/dsp";
 
@@ -55,6 +56,7 @@ const controls = bindControls(player);
 const fullscreen = bindFullscreen(
   mustElement<HTMLButtonElement>("#btn-fullscreen"),
 );
+const help = bindHelp();
 const unbindKeys = bindKeyboard(engine, {
   onMode: (mode) => {
     visualizer.setMode(mode);
@@ -71,6 +73,10 @@ const unbindKeys = bindKeyboard(engine, {
   onToggleFullscreen: () => {
     void fullscreen.toggle();
   },
+  onToggleHelp: () => {
+    help.toggle();
+  },
+  isBlocked: () => help.isOpen(),
 });
 const unbindDrop = bindDropzone((files) => {
   // drop 是用户手势，先同步恢复上下文，避免解码后才 resume 被拦截
@@ -130,6 +136,7 @@ if (import.meta.hot) {
     unbindWallpaper();
     unbindKeys();
     fullscreen.dispose();
+    help.dispose();
     panel.dispose();
     controls.dispose();
     player.dispose();

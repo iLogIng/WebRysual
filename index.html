@@ -8,15 +8,27 @@
 
   <body>
     <div id="app"></div>
-    <button
-      id="panel-toggle"
-      class="panel-toggle"
-      type="button"
-      aria-label="播放列表"
-      aria-expanded="false"
-    >
-      <span></span><span></span><span></span>
-    </button>
+    <div class="top-actions">
+      <button
+        id="help-toggle"
+        class="icon-button"
+        type="button"
+        aria-label="快捷键"
+        aria-expanded="false"
+        title="快捷键 (H)"
+      >
+        ?
+      </button>
+      <button
+        id="panel-toggle"
+        class="icon-button panel-toggle"
+        type="button"
+        aria-label="播放列表"
+        aria-expanded="false"
+      >
+        <span></span><span></span><span></span>
+      </button>
+    </div>
 
     <aside id="playlist" class="playlist" aria-label="播放列表">
       <header class="playlist-header">
@@ -69,6 +81,30 @@
       <span id="time" class="time">00:00 / 00:00</span>
 
       <input id="file" type="file" accept="audio/*" multiple hidden />
+    </div>
+
+    <div id="help" class="help" hidden>
+      <div id="help-backdrop" class="help-backdrop"></div>
+      <section
+        id="help-card"
+        class="help-card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="help-title"
+      >
+        <header class="help-header">
+          <h2 id="help-title">快捷键</h2>
+          <button
+            id="help-close"
+            class="help-close"
+            type="button"
+            aria-label="关闭"
+          >
+            ×
+          </button>
+        </header>
+        <div id="help-content" class="help-content"></div>
+      </section>
     </div>
 
     <script type="module" src="/src/main.ts"></script>

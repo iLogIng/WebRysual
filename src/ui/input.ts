@@ -7,6 +7,9 @@ export type KeyboardOptions = {
   onPrev?: () => void;
   onTogglePlaylist?: () => void;
   onToggleFullscreen?: () => void;
+  onToggleHelp?: () => void;
+  // 帮助等模态层打开时，屏蔽其他全局快捷键
+  isBlocked?: () => boolean;
 };
 
 export function bindKeyboard(
@@ -18,6 +21,11 @@ export function bindKeyboard(
 
     const el = e.target as HTMLElement | null;
     if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) return;
+
+    // 模态层打开时，只允许 H / ? 继续开关帮助
+    if (options.isBlocked?.() && e.code !== "KeyH" && e.key !== "?") {
+      return;
+    }
 
     switch (e.code) {
       case "Space":
@@ -60,7 +68,14 @@ export function bindKeyboard(
       case "KeyF":
         options.onToggleFullscreen?.();
         break;
+      case "KeyH":
+        options.onToggleHelp?.();
+        break;
       default:
+        if (e.key === "?") {
+          e.preventDefault();
+          options.onToggleHelp?.();
+        }
         break;
     }
   };
