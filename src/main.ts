@@ -9,6 +9,7 @@ import { bindKeyboard } from "./ui/input";
 import { bindDropzone } from "./ui/dropzone";
 import { bindPlaylistPanel } from "./ui/PlaylistPanel";
 import { bindWallpaper } from "./ui/wallpaper";
+import { bindFullscreen } from "./ui/fullscreen";
 import { showToast, clearToasts } from "./ui/toast";
 import { computeRms } from "./audio/dsp";
 
@@ -51,6 +52,9 @@ stage.scene.add(visualizer.object);
 
 const panel = bindPlaylistPanel(player);
 const controls = bindControls(player);
+const fullscreen = bindFullscreen(
+  mustElement<HTMLButtonElement>("#btn-fullscreen"),
+);
 const unbindKeys = bindKeyboard(engine, {
   onMode: (mode) => {
     visualizer.setMode(mode);
@@ -63,6 +67,9 @@ const unbindKeys = bindKeyboard(engine, {
   },
   onTogglePlaylist: () => {
     panel.toggle();
+  },
+  onToggleFullscreen: () => {
+    void fullscreen.toggle();
   },
 });
 const unbindDrop = bindDropzone((files) => {
@@ -122,6 +129,7 @@ if (import.meta.hot) {
     unbindDrop();
     unbindWallpaper();
     unbindKeys();
+    fullscreen.dispose();
     panel.dispose();
     controls.dispose();
     player.dispose();

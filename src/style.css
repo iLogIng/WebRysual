@@ -288,3 +288,9 @@ body.dragging::after {
   color: #ffb3b3;
   border-color: rgba(255, 110, 110, 0.5);
 }
+
+/* 全屏空闲时隐藏光标 */
+body.hide-cursor,
+body.hide-cursor * {
+  cursor: none !important;
+}

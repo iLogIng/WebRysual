@@ -6,6 +6,7 @@ export type KeyboardOptions = {
   onNext?: () => void;
   onPrev?: () => void;
   onTogglePlaylist?: () => void;
+  onToggleFullscreen?: () => void;
 };
 
 export function bindKeyboard(
@@ -55,6 +56,9 @@ export function bindKeyboard(
         break;
       case "KeyL":
         options.onTogglePlaylist?.();
+        break;
+      case "KeyF":
+        options.onToggleFullscreen?.();
         break;
       default:
         break;
